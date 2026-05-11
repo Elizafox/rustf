@@ -1,2 +1,2 @@
-A minimal implementation of cat.
+A minimal implementation of cat
 ,[.,]
