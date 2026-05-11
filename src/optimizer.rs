@@ -106,7 +106,7 @@ impl CompiledProgram {
 
         if let Some(offset) = is_move_add {
             out.push(Instr::MoveAdd(offset));
-            idx += 6; // [->+<]: move add
+            idx += 6;
         } else if matches!(
             (instrs.get(idx + 1), instrs.get(idx + 2)),
             (
