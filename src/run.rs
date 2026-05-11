@@ -24,7 +24,7 @@ impl CompiledProgram {
     }
 
     pub fn run(&self, input: &mut impl Read, output: &mut impl Write) -> Result<(), RuntimeError> {
-        let mut data_cells = vec![0u8; 128];
+        let mut data_cells = vec![0u8; 30000]; // Extendable, but traditional
         let mut data_ptr = 0usize;
         let mut instr_ptr = 0usize;
 
