@@ -15,7 +15,6 @@ pub enum CompileError {
 #[derive(Debug, Default)]
 pub struct CompiledProgram {
     pub instrs: Vec<Instr>,
-    pub _warnings: Vec<String>,
 }
 
 impl CompiledProgram {
