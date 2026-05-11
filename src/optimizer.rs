@@ -4,19 +4,21 @@ impl CompiledProgram {
     pub fn optimize(&mut self) {
         let instrs = std::mem::take(&mut self.instrs);
         let mut out: Vec<Instr> = Vec::with_capacity(instrs.len());
-        let mut i = 0;
+        let mut idx = 0;
 
-        while i < instrs.len() {
-            match instrs[i] {
+        while idx < instrs.len() {
+            match instrs[idx] {
                 Instr::AddByte(_) | Instr::SubByte(_) => {
-                    Self::add_sub_byte(&instrs, &mut out, &mut i);
+                    idx = Self::add_sub_byte(&instrs, &mut out, idx);
                 }
-                Instr::AddPtr(_) | Instr::SubPtr(_) => Self::add_sub_ptr(&instrs, &mut out, &mut i),
-                Instr::JmpIfZero(_) => Self::jmp_if_zero(&instrs, &mut out, &mut i),
-                Instr::SetByte(n) => Self::set_byte(&instrs, &mut out, &mut i, n),
+                Instr::AddPtr(_) | Instr::SubPtr(_) => {
+                    idx = Self::add_sub_ptr(&instrs, &mut out, idx);
+                }
+                Instr::JmpIfZero(_) => idx = Self::jmp_if_zero(&instrs, &mut out, idx),
+                Instr::SetByte(n) => idx = Self::set_byte(&instrs, &mut out, idx, n),
                 instr => {
                     out.push(instr);
-                    i += 1;
+                    idx += 1;
                 }
             }
         }
@@ -26,60 +28,64 @@ impl CompiledProgram {
     }
 
     #[inline]
-    fn add_sub_byte(instrs: &[Instr], out: &mut Vec<Instr>, i: &mut usize) {
-        let mut acc: i16 = match instrs[*i] {
+    fn add_sub_byte(instrs: &[Instr], out: &mut Vec<Instr>, mut idx: usize) -> usize {
+        let mut acc: i16 = match instrs[idx] {
             Instr::AddByte(n) => i16::from(n),
             Instr::SubByte(n) => -i16::from(n),
             _ => unreachable!(),
         };
         loop {
-            match instrs.get(*i + 1) {
+            match instrs.get(idx + 1) {
                 Some(Instr::AddByte(m)) => acc += i16::from(*m),
                 Some(Instr::SubByte(m)) => acc -= i16::from(*m),
                 _ => break,
             }
-            *i += 1;
+            idx += 1;
         }
+
         match u8::try_from(acc.rem_euclid(256)).unwrap() {
             0 => {} // cancels out, emit nothing
             n if acc >= 0 => out.push(Instr::AddByte(n)),
             n => out.push(Instr::SubByte(n.wrapping_neg())),
         }
-        *i += 1;
+
+        idx + 1
     }
 
     #[inline]
-    fn add_sub_ptr(instrs: &[Instr], out: &mut Vec<Instr>, i: &mut usize) {
-        let mut acc: isize = match instrs[*i] {
+    fn add_sub_ptr(instrs: &[Instr], out: &mut Vec<Instr>, mut idx: usize) -> usize {
+        let mut acc: isize = match instrs[idx] {
             Instr::AddPtr(n) => n.cast_signed(),
             Instr::SubPtr(n) => -(n.cast_signed()),
             _ => unreachable!(),
         };
         loop {
-            match instrs.get(*i + 1) {
+            match instrs.get(idx + 1) {
                 Some(Instr::AddPtr(m)) => acc += (*m).cast_signed(),
                 Some(Instr::SubPtr(m)) => acc -= (*m).cast_signed(),
                 _ => break,
             }
-            *i += 1;
+            idx += 1;
         }
+
         match acc {
             0 => {} // cancels out, emit nothing
             n if n > 0 => out.push(Instr::AddPtr(n.cast_unsigned())),
             n => out.push(Instr::SubPtr(n.unsigned_abs())),
         }
-        *i += 1;
+
+        idx + 1
     }
 
     #[inline]
-    fn jmp_if_zero(instrs: &[Instr], out: &mut Vec<Instr>, i: &mut usize) {
+    fn jmp_if_zero(instrs: &[Instr], out: &mut Vec<Instr>, mut idx: usize) -> usize {
         // [->+<] pattern: move add
         let is_move_add = match (
-            instrs.get(*i + 1),
-            instrs.get(*i + 2),
-            instrs.get(*i + 3),
-            instrs.get(*i + 4),
-            instrs.get(*i + 5),
+            instrs.get(idx + 1),
+            instrs.get(idx + 2),
+            instrs.get(idx + 3),
+            instrs.get(idx + 4),
+            instrs.get(idx + 5),
         ) {
             (
                 Some(Instr::SubByte(1)),
@@ -100,63 +106,65 @@ impl CompiledProgram {
 
         if let Some(offset) = is_move_add {
             out.push(Instr::MoveAdd(offset));
-            *i += 6; // [-] or [+]: zeroes the current cell
+            idx += 6; // [->+<]: move add
         } else if matches!(
-            (instrs.get(*i + 1), instrs.get(*i + 2)),
+            (instrs.get(idx + 1), instrs.get(idx + 2)),
             (
                 Some(Instr::SubByte(1) | Instr::AddByte(1)),
                 Some(Instr::JmpIfNonzero(_))
             )
         ) {
             out.push(Instr::SetByte(0));
-            *i += 3;
+            idx += 3;
         // []: cell is zero to enter, unconditionally skipped, dead code
-        } else if matches!(instrs.get(*i + 1), Some(Instr::JmpIfNonzero(_))) {
-            *i += 2;
+        } else if matches!(instrs.get(idx + 1), Some(Instr::JmpIfNonzero(_))) {
+            idx += 2;
         } else {
-            out.push(instrs[*i]);
-            *i += 1;
+            out.push(instrs[idx]);
+            idx += 1;
         }
+
+        idx
     }
 
     #[inline]
-    fn set_byte(instrs: &[Instr], out: &mut Vec<Instr>, i: &mut usize, n: u8) {
+    fn set_byte(instrs: &[Instr], out: &mut Vec<Instr>, mut idx: usize, mut n: u8) -> usize {
         // redundant SetByte: SetByte(x), SetByte(y) -> SetByte(y)
         // keep consuming until no more SetBytes
-        let mut val = n;
-        while let Some(Instr::SetByte(m)) = instrs.get(*i + 1) {
-            val = *m;
-            *i += 1;
+        while let Some(Instr::SetByte(m)) = instrs.get(idx + 1) {
+            n = *m;
+            idx += 1;
         }
         // fold trailing AddByte/SubByte into the known value
         loop {
-            match instrs.get(*i + 1) {
+            match instrs.get(idx + 1) {
                 Some(Instr::AddByte(m)) => {
-                    val = val.wrapping_add(*m);
-                    *i += 1;
+                    n = n.wrapping_add(*m);
+                    idx += 1;
                 }
                 Some(Instr::SubByte(m)) => {
-                    val = val.wrapping_sub(*m);
-                    *i += 1;
+                    n = n.wrapping_sub(*m);
+                    idx += 1;
                 }
                 _ => break,
             }
         }
-        out.push(Instr::SetByte(val));
-        *i += 1;
+        out.push(Instr::SetByte(n));
+
+        idx + 1
     }
 
     #[inline]
     fn resolve_jumps(&mut self) {
         let mut loop_starts: Vec<usize> = Vec::new();
-        for i in 0..self.instrs.len() {
-            match self.instrs[i] {
-                Instr::JmpIfZero(_) => loop_starts.push(i),
+        for idx in 0..self.instrs.len() {
+            match self.instrs[idx] {
+                Instr::JmpIfZero(_) => loop_starts.push(idx),
                 Instr::JmpIfNonzero(_) => {
-                    if let Some(start) = loop_starts.pop() {
-                        self.instrs[start] = Instr::JmpIfZero(i);
-                        self.instrs[i] = Instr::JmpIfNonzero(start);
-                    }
+                    // If this panics, it's a bug
+                    let start = loop_starts.pop().expect("unmatched ] in optimized output");
+                    self.instrs[start] = Instr::JmpIfZero(idx);
+                    self.instrs[idx] = Instr::JmpIfNonzero(start);
                 }
                 _ => {}
             }
