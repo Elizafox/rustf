@@ -180,7 +180,7 @@ mod tests {
     };
 
     #[test]
-    fn test_compile_optimize_fold_add_ptr() -> Result<(), CompileError> {
+    fn fold_add_ptr() -> Result<(), CompileError> {
         let program = CompiledProgram::compile(">>>", 2)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -190,7 +190,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_fold_sub_ptr() -> Result<(), CompileError> {
+    fn fold_sub_ptr() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("<<<", 2)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -200,7 +200,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_fold_add_sub_ptr_positive() -> Result<(), CompileError> {
+    fn fold_add_sub_ptr_positive() -> Result<(), CompileError> {
         let program = CompiledProgram::compile(">>><<", 2)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -210,7 +210,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_fold_add_sub_ptr_negative() -> Result<(), CompileError> {
+    fn fold_add_sub_ptr_negative() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("<<<>>", 2)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -220,7 +220,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_fold_add_byte() -> Result<(), CompileError> {
+    fn fold_add_byte() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("+++", 2)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -230,7 +230,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_fold_sub_byte() -> Result<(), CompileError> {
+    fn fold_sub_byte() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("---", 2)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -240,7 +240,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_fold_add_sub_byte_positive() -> Result<(), CompileError> {
+    fn fold_add_sub_byte_positive() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("+++--", 2)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -250,7 +250,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_fold_add_sub_byte_negative() -> Result<(), CompileError> {
+    fn fold_add_sub_byte_negative() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("---++", 2)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -260,7 +260,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_skip_empty_loop() -> Result<(), CompileError> {
+    fn skip_empty_loop() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("[]+", 2)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -270,7 +270,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_clear_loop_sub() -> Result<(), CompileError> {
+    fn clear_loop_sub() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("[-]", 2)?;
         assert_eq!(program.instrs.len(), 1);
         assert_eq!(program.instrs[0], Instr::SetByte(0));
@@ -278,7 +278,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_clear_loop_add() -> Result<(), CompileError> {
+    fn clear_loop_add() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("[+]", 2)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -288,7 +288,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_set_byte_fold_add() -> Result<(), CompileError> {
+    fn set_byte_fold_add() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("[-]+++", 2)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -298,7 +298,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_set_byte_fold_sub() -> Result<(), CompileError> {
+    fn set_byte_fold_sub() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("[-]---", 2)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -308,7 +308,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_redundant_set_byte() -> Result<(), CompileError> {
+    fn redundant_set_byte() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("[-][-]", 2)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -318,7 +318,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_move_add_forward() -> Result<(), CompileError> {
+    fn move_add_forward() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("[->+<]", 2)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -328,7 +328,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_move_add_backward() -> Result<(), CompileError> {
+    fn move_add_backward() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("[-<+>]", 2)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -338,7 +338,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_byte_wraps() -> Result<(), CompileError> {
+    fn byte_wraps() -> Result<(), CompileError> {
         // 256 additions should cancel to zero and emit nothing...
         // or wrap to AddByte(0) which should also emit nothing
         let program = CompiledProgram::compile(&"+".repeat(256), 2)?;
@@ -349,14 +349,14 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_optimize_ptr_cancels() -> Result<(), CompileError> {
+    fn ptr_cancels() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("><", 2)?;
         assert_eq!(program.instrs.len(), 0);
         Ok(())
     }
 
     #[test]
-    fn test_compile_optimize_byte_cancels() -> Result<(), CompileError> {
+    fn byte_cancels() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("+-", 2)?;
 
         assert_eq!(program.instrs.len(), 0);

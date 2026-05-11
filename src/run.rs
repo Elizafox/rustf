@@ -97,3 +97,79 @@ impl CompiledProgram {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::compile::CompiledProgram;
+
+    fn run_program(source: &str, input: &[u8], opt: u8) -> Vec<u8> {
+        let program = CompiledProgram::compile(source, opt).unwrap();
+        let mut input = input;
+        let mut output = Vec::new();
+
+        program.run(&mut input, &mut output).unwrap();
+
+        output
+    }
+
+    #[test]
+    fn hello_world() {
+        assert_eq!(
+            run_program(
+                "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.",
+                b"",
+                2,
+            ),
+            b"Hello World!\n"
+        );
+    }
+
+    #[test]
+    fn cat() {
+        assert_eq!(run_program(",[.,]", b"hello", 2), b"hello");
+    }
+
+    #[test]
+    fn wrapping_add() {
+        // cell starts at 0, subtract 1 should wrap to 255
+        assert_eq!(run_program("-.", b"", 2)[0], 255);
+    }
+
+    #[test]
+    fn wrapping_sub() {
+        // 256 increments should wrap back to 0
+        assert_eq!(run_program(&format!("{}.", "+".repeat(256)), b"", 2)[0], 0);
+    }
+
+    #[test]
+    fn multiple_cells() {
+        // set cell 0 to 1, cell 1 to 2, cell 2 to 3, output all three
+        assert_eq!(run_program("+>++>+++<<.>.>.", b"", 2), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn clear_loop() {
+        // set cell to 6, clear it, output should be 0
+        assert_eq!(run_program("++++++[-].", b"", 2)[0], 0);
+    }
+
+    #[test]
+    fn move_add() {
+        // cell 0 = 3, cell 1 = 2, move cell 0 into cell 1 -> cell 0 = 0, cell 1 = 5
+        assert_eq!(run_program("+++>++<[->+<]>.", b"", 2)[0], 5);
+    }
+
+    #[test]
+    fn optimizer_equivalence_hello_world() {
+        let src = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.";
+        assert_eq!(run_program(src, b"", 0), run_program(src, b"", 2));
+    }
+
+    #[test]
+    fn optimizer_equivalence_cat() {
+        assert_eq!(
+            run_program(",[.,]", b"hello world", 0),
+            run_program(",[.,]", b"hello world", 2)
+        );
+    }
+}

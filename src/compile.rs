@@ -71,7 +71,7 @@ mod tests {
     use crate::instr::Instr;
 
     #[test]
-    fn test_compile_add_byte() -> Result<(), CompileError> {
+    fn add_byte() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("+", 0)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -81,7 +81,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_sub_byte() -> Result<(), CompileError> {
+    fn sub_byte() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("-", 0)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -91,7 +91,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_add_ptr() -> Result<(), CompileError> {
+    fn add_ptr() -> Result<(), CompileError> {
         let program = CompiledProgram::compile(">", 0)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -101,7 +101,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_sub_ptr() -> Result<(), CompileError> {
+    fn sub_ptr() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("<", 0)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -111,7 +111,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_input() -> Result<(), CompileError> {
+    fn input() -> Result<(), CompileError> {
         let program = CompiledProgram::compile(",", 0)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -121,7 +121,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_output() -> Result<(), CompileError> {
+    fn output() -> Result<(), CompileError> {
         let program = CompiledProgram::compile(".", 0)?;
 
         assert_eq!(program.instrs.len(), 1);
@@ -131,7 +131,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_loop() -> Result<(), CompileError> {
+    fn loop_single() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("[]", 0)?;
 
         assert_eq!(program.instrs.len(), 2);
@@ -142,7 +142,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_loop_nested() -> Result<(), CompileError> {
+    fn loop_nested() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("[[]]", 0)?;
 
         assert_eq!(program.instrs.len(), 4);
@@ -159,7 +159,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_simple_program() -> Result<(), CompileError> {
+    fn simple_program() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("[+-]", 0)?;
 
         assert_eq!(program.instrs.len(), 4);
@@ -172,7 +172,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_with_comment() -> Result<(), CompileError> {
+    fn with_comment() -> Result<(), CompileError> {
         let program = CompiledProgram::compile("+ hello world +", 0)?;
 
         assert_eq!(program.instrs.len(), 2);
@@ -183,7 +183,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_empty() {
+    fn empty() {
         assert!(matches!(
             CompiledProgram::compile("", 0),
             Err(CompileError::ProgramEmpty)
@@ -191,7 +191,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_empty_with_comment() {
+    fn empty_with_comment() {
         assert!(matches!(
             CompiledProgram::compile("hello world", 0),
             Err(CompileError::ProgramEmpty)
@@ -199,7 +199,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_whitespace_only() {
+    fn whitespace_only() {
         assert!(matches!(
             CompiledProgram::compile("   \n\t  ", 0),
             Err(CompileError::ProgramEmpty)
@@ -207,7 +207,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_loop_open_malformed() {
+    fn loop_open_malformed() {
         assert!(matches!(
             CompiledProgram::compile("[", 0),
             Err(CompileError::UnterminatedLoop(1))
@@ -215,7 +215,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_loop_closed_malformed() {
+    fn loop_closed_malformed() {
         assert!(matches!(
             CompiledProgram::compile("]", 0),
             Err(CompileError::NoLoopStart(1))
