@@ -1,19 +1,15 @@
 use crate::{compile::CompiledProgram, instr::Instr};
 use std::io;
 
-pub struct LlvmEmitter<'a> {
-    output: Box<dyn io::Write + 'a>,
+pub struct LlvmEmitter<O: io::Write> {
+    output: O,
     label_counter: usize,
     loop_stack: Vec<usize>,
     tape_size: usize,
 }
 
-impl<'a> LlvmEmitter<'a> {
-    pub fn emit(
-        output: Box<dyn io::Write + 'a>,
-        program: &CompiledProgram,
-        tape_size: usize,
-    ) -> io::Result<()> {
+impl<O: io::Write> LlvmEmitter<O> {
+    pub fn emit(output: O, program: &CompiledProgram, tape_size: usize) -> io::Result<()> {
         let mut emitter = Self {
             output,
             label_counter: 0,

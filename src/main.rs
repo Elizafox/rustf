@@ -116,7 +116,7 @@ fn command_emit(args: EmitArgs) -> Result<(), Box<dyn std::error::Error>> {
         filename
     });
     let llvm_ir_file = File::create(llvm_ir_filename)?;
-    LlvmEmitter::emit(Box::new(llvm_ir_file), &program, args.tape_length)?;
+    LlvmEmitter::emit(llvm_ir_file, &program, args.tape_length)?;
 
     Ok(())
 }
